@@ -1,6 +1,7 @@
 package com.example.mobile_project;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -10,7 +11,6 @@ import android.os.Build;
 import android.os.Bundle;
 import com.google.android.material.snackbar.Snackbar;
 
-import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "HabitPrefs";
     private static final String KEY_NOTIFICATIONS_ENABLED = "notifications_enabled";
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(habitAdapter);
 
         Snackbar.make(binding.getRoot(), "Tip: Tap to edit, Long press to delete.", Snackbar.LENGTH_LONG)
-                .setAnchorView(binding.fab) // So it doesn't overlap FAB
+                .setAnchorView(binding.fab)
                 .show();
 
         ViewCompat.setTooltipText(binding.fab, "Add new habit");
@@ -81,26 +82,6 @@ public class MainActivity extends AppCompatActivity {
         habitAdapter.notifyDataSetChanged();
 
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-
-        Switch notificationSwitch = findViewById(R.id.notificationSwitch);
-
-        boolean notificationsEnabled = sharedPreferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, true);
-        notificationSwitch.setChecked(notificationsEnabled);
-
-        notificationSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean(KEY_NOTIFICATIONS_ENABLED, isChecked);
-            editor.apply();
-
-            if (isChecked) {
-                Toast.makeText(this, "Notifications Enabled", Toast.LENGTH_SHORT).show();
-                startDailyReminder();
-            } else {
-                Toast.makeText(this, "Notifications Disabled", Toast.LENGTH_SHORT).show();
-                cancelDailyReminder();
-            }
-        });
-
     }
 
     @Override
@@ -122,15 +103,24 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 1 && resultCode == RESULT_OK) {
+        if (resultCode == RESULT_OK) {
             String habitTitle = data.getStringExtra("HABIT_TITLE");
 
-            if (habitTitle != null) {
+            if (requestCode == 1 && habitTitle != null) {
+                // Add new habit
                 HabitTemplate newHabit = new HabitTemplate(habitTitle);
                 habitList.add(newHabit);
                 habitAdapter.notifyItemInserted(habitList.size() - 1);
-                saveHabits();
+            } else if (requestCode == 2) {
+                // Edit existing habit title only
+                int editPos = data.getIntExtra("EDIT_POSITION", -1);
+                if (editPos != -1 && editPos < habitList.size()) {
+                    habitList.get(editPos).setTitle(habitTitle);
+                    habitAdapter.notifyItemChanged(editPos);
+                }
             }
+
+            saveHabits();
         }
     }
 
@@ -166,53 +156,5 @@ public class MainActivity extends AppCompatActivity {
                 habitList.add(habit);
             }
         }
-    }
-
-    private void startDailyReminder() {
-        Log.d("ALARM", "Inside startDailyReminder()");
-
-        Intent intent = new Intent(this, NotificationReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                this,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-
-        if (alarmManager != null) {
-            long triggerTime = System.currentTimeMillis() + 5 * 1000; // 5 seconds for testing
-
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (alarmManager.canScheduleExactAlarms()) {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                    } else {
-                        Log.e("ALARM", "Cannot schedule exact alarms. Need user permission!");
-                        // Optionally guide user to settings if you want
-                    }
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                } else {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                }
-                Log.d("ALARM", "Alarm scheduled successfully!");
-            } catch (SecurityException e) {
-                Log.e("ALARM", "SecurityException: " + e.getMessage());
-            }
-        }
-    }
-
-
-
-
-
-    private void cancelDailyReminder() {
-        Intent intent = new Intent(this, NotificationReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        alarmManager.cancel(pendingIntent);
     }
 }

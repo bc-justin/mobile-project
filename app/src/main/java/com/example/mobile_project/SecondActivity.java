@@ -31,15 +31,21 @@ public class SecondActivity extends AppCompatActivity {
             return insets;
         });
 
+        String originalTitle = getIntent().getStringExtra("HABIT_TITLE");
+        if (originalTitle != null) {
+            habitEditText.setText(originalTitle);
+        }
+
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String habitTitle = habitEditText.getText().toString();
+                String habitTitle = habitEditText.getText().toString().trim();
                 if (!habitTitle.isEmpty()) {
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("HABIT_TITLE", habitTitle);
+                    resultIntent.putExtra("EDIT_POSITION", getIntent().getIntExtra("EDIT_POSITION", -1));
                     setResult(RESULT_OK, resultIntent);
-                    finish(); // Close AddHabitActivity
+                    finish();
                 }
             }
         });
