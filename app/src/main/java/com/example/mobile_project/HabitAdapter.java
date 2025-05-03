@@ -2,8 +2,6 @@ package com.example.mobile_project;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.provider.ContactsContract;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,12 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
-import javax.sql.DataSource;
-
-public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.HabitViewHolder>{
+public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.HabitViewHolder> {
     private Context context;
     private ArrayList<HabitTemplate> habitList;
-    public HabitAdapter(Context context, ArrayList<HabitTemplate> habitList){
+
+    public HabitAdapter(Context context, ArrayList<HabitTemplate> habitList) {
         this.context = context;
         this.habitList = habitList;
     }
@@ -34,53 +31,51 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.HabitViewHol
     @Override
     public void onBindViewHolder(HabitViewHolder holder, int position) {
         HabitTemplate habit = habitList.get(position);
+
         holder.titleTextView.setText(habit.getTitle());
         holder.streakTextView.setText("Streak: " + habit.getStreak() + " 🔥");
         holder.completedCheckBox.setChecked(habit.isCompleted());
-        if (habit.getLastCheckedTime()> 10 * 1000){
-            holder.completedCheckBox.setChecked(false);
-        }
+
+        // Long press to delete
         holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
-                int position = holder.getAdapterPosition();
-                habitList.remove(position);
-                notifyItemRemoved(position);
+                int pos = holder.getAdapterPosition();
+                habitList.remove(pos);
+                notifyItemRemoved(pos);
                 return true;
             }
         });
 
+        // Tap to edit
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                int position = holder.getAdapterPosition();
-                HabitTemplate habit = habitList.get(position);
+                int pos = holder.getAdapterPosition();
+                HabitTemplate h = habitList.get(pos);
 
                 Intent intent = new Intent(view.getContext(), SecondActivity.class);
-                intent.putExtra("HABIT_TITLE", habit.getTitle());
-                intent.putExtra("EDIT_POSITION", position);
-                ((MainActivity)view.getContext()).startActivityForResult(intent, 2); // 2 = edit request code
+                intent.putExtra("HABIT_TITLE", h.getTitle());
+                intent.putExtra("EDIT_POSITION", pos);
+                ((MainActivity) view.getContext()).startActivityForResult(intent, 2);
             }
         });
 
+        // Checkbox behavior: update streak and time
         holder.completedCheckBox.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                habit.setCompleted(holder.completedCheckBox.isChecked());
-                if ( System.currentTimeMillis() - habit.getLastCheckedTime() <= 10 * 1000 && habit.isCompleted())
-                {
+                boolean isChecked = holder.completedCheckBox.isChecked();
+                habit.setCompleted(isChecked);
+                long now = System.currentTimeMillis();
+
+                if (isChecked) {
                     habit.incrementStreak();
-                    habit.setLastCheckedTime(System.currentTimeMillis());
-                }
-                else if (habit.isCompleted() ) {
-                    habit.incrementStreak();
-                    habit.setLastCheckedTime(System.currentTimeMillis());
-                }
-                else if ( habit.getLastCheckedTime() > 10 * 1000){
-                    habit.resetStreak();
+                } else {
+                    habit.setStreak(Math.max(0, habit.getStreak() - 1));
                 }
 
-
+                habit.setLastCheckedTime(now);
                 notifyItemChanged(holder.getAdapterPosition());
             }
         });
@@ -103,5 +98,4 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.HabitViewHol
             completedCheckBox = itemView.findViewById(R.id.habitCheckbox);
         }
     }
-
 }

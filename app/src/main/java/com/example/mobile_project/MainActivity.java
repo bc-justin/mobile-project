@@ -20,12 +20,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
 import com.example.mobile_project.databinding.ActivityMainBinding;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Switch;
+import android.widget.Button;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
 
     private SharedPreferences sharedPreferences;
     private static final String PREFS_NAME = "HabitPrefs";
-    private static final String KEY_NOTIFICATIONS_ENABLED = "notifications_enabled";
 
     @SuppressLint("NotifyDataSetChanged")
     @Override
@@ -58,7 +56,8 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(i, 1);
             }
         });
-        sharedPreferences = getSharedPreferences("HabitPrefs", MODE_PRIVATE);
+
+        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         loadHabits();
         habitAdapter = new HabitAdapter(MainActivity.this, habitList);
 
@@ -80,22 +79,37 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        for (HabitTemplate habit : habitList) {
-            if (habit.isCompleted()) {
-                long currentTime = System.currentTimeMillis();
-                long elapsedTime = currentTime - habit.getLastCheckedTime();
-
-                if (elapsedTime > 10 * 1000) {
-                    habit.setCompleted(false);
-                    habit.resetStreak();
-                }
+        // Initial cleanup logic on app open
+        // Handle refresh button click
+        Button refreshButton = findViewById(R.id.refreshButton);
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                refreshHabits();
+                habitAdapter.notifyDataSetChanged();
+                Toast.makeText(MainActivity.this, "Habits refreshed.", Toast.LENGTH_SHORT).show();
             }
-        }
+        });
+        refreshHabits();
         habitAdapter.notifyDataSetChanged();
-
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         setAlarmIfAllowed();
+    }
 
+    private void refreshHabits() {
+        long currentTime = System.currentTimeMillis();
+
+        for (HabitTemplate habit : habitList) {
+            long lastChecked = habit.getLastCheckedTime();
+
+            if (habit.isCompleted() && currentTime - lastChecked >= 10 * 1000L) {
+                habit.setCompleted(false);
+            }
+
+            if (currentTime - lastChecked >= 20 * 1000L) {
+                habit.resetStreak();
+            }
+        }
     }
 
     private void setAlarm() {
@@ -107,16 +121,14 @@ public class MainActivity extends AppCompatActivity {
 
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
-        long triggerTime = System.currentTimeMillis() + 24* 60* 60 * 1000;
+        long triggerTime = System.currentTimeMillis() + 10 * 1000;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
         } else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
         }
-
     }
-
 
     private void setAlarmIfAllowed() {
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
@@ -176,13 +188,14 @@ public class MainActivity extends AppCompatActivity {
     private void saveHabits() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
-        editor.putInt("habit_count", habitList.size()); // Save how many habits
+        editor.putInt("habit_count", habitList.size());
 
         for (int i = 0; i < habitList.size(); i++) {
             HabitTemplate habit = habitList.get(i);
             editor.putString("habit_" + i + "_title", habit.getTitle());
             editor.putBoolean("habit_" + i + "_completed", habit.isCompleted());
             editor.putInt("habit_" + i + "_streak", habit.getStreak());
+            editor.putLong("habit_" + i + "_lastChecked", habit.getLastCheckedTime());
         }
 
         editor.apply();
@@ -190,20 +203,41 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadHabits() {
         int count = sharedPreferences.getInt("habit_count", 0);
-
         habitList = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
             String title = sharedPreferences.getString("habit_" + i + "_title", null);
             boolean completed = sharedPreferences.getBoolean("habit_" + i + "_completed", false);
             int streak = sharedPreferences.getInt("habit_" + i + "_streak", 0);
+            long lastChecked = sharedPreferences.getLong("habit_" + i + "_lastChecked", 0);
 
             if (title != null) {
                 HabitTemplate habit = new HabitTemplate(title);
                 habit.setCompleted(completed);
                 habit.setStreak(streak);
+                habit.setLastCheckedTime(lastChecked);
                 habitList.add(habit);
             }
         }
     }
+    @Override
+    public void onPause(){
+        super.onPause();
+        refreshHabits();
+        Toast.makeText(MainActivity.this, "Daily Habit Tracker PAUSED.", Toast.LENGTH_SHORT).show();
+        saveHabits();
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        refreshHabits();
+        saveHabits();
+    }
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        refreshHabits();
+        saveHabits();
+    }
 }
+

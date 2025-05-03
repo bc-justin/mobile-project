@@ -5,37 +5,57 @@
     android:id="@+id/coordinatorLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/background">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.Material3.Toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        app:title="Daily Habits"
+        app:titleTextColor="@android:color/white"
+        app:navigationIcon="@drawable/ic_baseline_format_list_bulleted_24"
+        />
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-    </com.google.android.material.appbar.AppBarLayout>
-
+    <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"
+        android:layout_marginBottom="80dp"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="?attr/actionBarSize"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
+    <!-- Refresh Button (floating style) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/refreshButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Refresh"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="24dp"
+        app:cornerRadius="24dp"
+        app:icon="@drawable/ic_baseline_refresh_24"
+        app:iconPadding="8dp"
+        app:iconTint="@color/primary"
+        />
+
+    <!-- Floating Action Button to add new habits -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
-
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        android:contentDescription="go to home"
-        app:srcCompat="@android:drawable/ic_input_add" />
-
-
+        android:layout_margin="24dp"
+        android:contentDescription="Add new habit"
+        app:srcCompat="@drawable/ic_baseline_add_24"
+        app:backgroundTint="@color/primary"
+        app:tint="@android:color/white" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
