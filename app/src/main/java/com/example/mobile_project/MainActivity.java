@@ -29,12 +29,12 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
-    private ArrayList<HabitTemplate> habitList = new ArrayList<>();
+    private static ArrayList<HabitTemplate> habitList = new ArrayList<>();
 
     private HabitAdapter habitAdapter;
     private RecyclerView recyclerView;
 
-    private SharedPreferences sharedPreferences;
+    private static SharedPreferences sharedPreferences;
     private static final String PREFS_NAME = "HabitPrefs";
 
     @SuppressLint("NotifyDataSetChanged")
@@ -76,13 +76,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // Initial cleanup logic on app open
-        // Handle refresh button click
         Button refreshButton = findViewById(R.id.refreshButton);
         refreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 refreshHabits();
+                saveHabits();
                 habitAdapter.notifyDataSetChanged();
                 Toast.makeText(MainActivity.this, "Habits refreshed.", Toast.LENGTH_SHORT).show();
             }
@@ -147,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void saveHabits() {
+    public static  void saveHabits() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
         editor.putInt("habit_count", habitList.size());
@@ -164,7 +163,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadHabits() {
-        habitList.clear(); // Don't reassign the list
         int count = sharedPreferences.getInt("habit_count", 0);
         for (int i = 0; i < count; i++) {
             String title = sharedPreferences.getString("habit_" + i + "_title", null);
@@ -190,15 +188,24 @@ public class MainActivity extends AppCompatActivity {
         saveHabits();
     }
     @Override
+    protected void onResume(){
+        super.onResume();
+        refreshHabits();
+        habitAdapter.notifyDataSetChanged();
+        saveHabits();
+   }
+    @Override
     protected void onStop() {
         super.onStop();
         refreshHabits();
+        habitAdapter.notifyDataSetChanged();
         saveHabits();
     }
     @Override
     public void onDestroy(){
         super.onDestroy();
         refreshHabits();
+        habitAdapter.notifyDataSetChanged();
         saveHabits();
     }
 }

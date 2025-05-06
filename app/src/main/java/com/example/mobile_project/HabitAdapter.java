@@ -1,5 +1,7 @@
 package com.example.mobile_project;
 
+import static com.example.mobile_project.MainActivity.saveHabits;
+
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -112,6 +114,7 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.HabitViewHol
 
                 habit.setLastCheckedTime(now);
                 notifyItemChanged(holder.getAdapterPosition());
+                saveHabits();
             }
         });
     }
