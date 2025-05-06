@@ -163,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadHabits() {
+        habitList.clear();
         int count = sharedPreferences.getInt("habit_count", 0);
         for (int i = 0; i < count; i++) {
             String title = sharedPreferences.getString("habit_" + i + "_title", null);
@@ -194,13 +195,6 @@ public class MainActivity extends AppCompatActivity {
         habitAdapter.notifyDataSetChanged();
         saveHabits();
    }
-    @Override
-    protected void onStop() {
-        super.onStop();
-        refreshHabits();
-        habitAdapter.notifyDataSetChanged();
-        saveHabits();
-    }
     @Override
     public void onDestroy(){
         super.onDestroy();
