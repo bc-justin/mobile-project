@@ -6,7 +6,6 @@
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
-    <string name="alarm_service_label">Alarm</string>
 
     <string name="enter_your_habit_name">enter your habit name</string>
 </resources>

@@ -1,6 +1,9 @@
 package com.example.mobile_project;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,9 +43,27 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.HabitViewHol
         holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
-                int pos = holder.getAdapterPosition();
-                habitList.remove(pos);
-                notifyItemRemoved(pos);
+                AlertDialog.Builder mb = new AlertDialog.Builder(context);
+                mb.setIcon(R.drawable.
+                        ic_launcher);
+                mb.setTitle("Habit Delete");
+                mb.setMessage("Are you sure you want to go to delete this habit? "+ habit.getTitle());
+                mb.setPositiveButton("yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        int pos = holder.getAdapterPosition();
+                        HabitTemplate h = habitList.get(pos);
+                        habitList.remove(pos);
+                        notifyItemRemoved(pos);
+                        Intent intent = new Intent(view.getContext(), MainActivity.class);
+                        intent.putExtra("DELETE_POSITION", pos);
+                        ((MainActivity) view.getContext()).startActivityForResult(intent, 3);}} );
+                mb.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();}});
+                Dialog d = mb.create();
+                d.show();
                 return true;
             }
         });
@@ -51,15 +72,29 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.HabitViewHol
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                int pos = holder.getAdapterPosition();
-                HabitTemplate h = habitList.get(pos);
+                AlertDialog.Builder mb = new AlertDialog.Builder(context);
+                mb.setIcon(R.drawable.
+                        ic_launcher);
+                mb.setTitle("Habit Editor");
+                mb.setMessage("Are you sure you want to edit this habit?" + habit.getTitle());
+                mb.setPositiveButton("yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        int pos = holder.getAdapterPosition();
+                        HabitTemplate h = habitList.get(pos);
+                        Intent intent = new Intent(view.getContext(), SecondActivity.class);
+                        intent.putExtra("HABIT_TITLE", h.getTitle());
+                        intent.putExtra("EDIT_POSITION", pos);
+                        ((MainActivity) view.getContext()).startActivityForResult(intent, 2);}} );
+                mb.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();}});
+                Dialog d = mb.create();
+                d.show();
+                }
 
-                Intent intent = new Intent(view.getContext(), SecondActivity.class);
-                intent.putExtra("HABIT_TITLE", h.getTitle());
-                intent.putExtra("EDIT_POSITION", pos);
-                ((MainActivity) view.getContext()).startActivityForResult(intent, 2);
-            }
-        });
+            });
 
         // Checkbox behavior: update streak and time
         holder.completedCheckBox.setOnClickListener(new View.OnClickListener() {

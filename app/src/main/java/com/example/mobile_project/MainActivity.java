@@ -2,9 +2,6 @@ package com.example.mobile_project;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -93,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
         refreshHabits();
         habitAdapter.notifyDataSetChanged();
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        setAlarmIfAllowed();
     }
 
     private void refreshHabits() {
@@ -109,41 +105,6 @@ public class MainActivity extends AppCompatActivity {
             if (currentTime - lastChecked >= 20 * 1000L) {
                 habit.resetStreak();
             }
-        }
-    }
-
-    private void setAlarm() {
-        Intent intent = new Intent(this, AlarmReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                this, 0, intent,
-                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-        );
-
-        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-
-        long triggerTime = System.currentTimeMillis() + 10 * 1000;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-        }
-    }
-
-    private void setAlarmIfAllowed() {
-        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                setAlarm();
-            } else {
-                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                startActivity(intent);
-
-                Toast.makeText(this, "Please allow exact alarms in settings to activate the scheduler.", Toast.LENGTH_LONG).show();
-            }
-        } else {
-            setAlarm();
         }
     }
 
@@ -180,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
                     habitAdapter.notifyItemChanged(editPos);
                 }
             }
+            else if(requestCode==3) saveHabits();
 
             saveHabits();
         }
@@ -202,9 +164,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadHabits() {
+        habitList.clear(); // Don't reassign the list
         int count = sharedPreferences.getInt("habit_count", 0);
-        habitList = new ArrayList<>();
-
         for (int i = 0; i < count; i++) {
             String title = sharedPreferences.getString("habit_" + i + "_title", null);
             boolean completed = sharedPreferences.getBoolean("habit_" + i + "_completed", false);
@@ -220,11 +181,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+
     @Override
     public void onPause(){
         super.onPause();
         refreshHabits();
-        Toast.makeText(MainActivity.this, "Daily Habit Tracker PAUSED.", Toast.LENGTH_SHORT).show();
         saveHabits();
     }
     @Override
